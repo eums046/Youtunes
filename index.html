@@ -1,58 +1,103 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Youtunes</title>
+    <title>YouTunes - Your Personal Music Player</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="logo.png" type="image/x-icon">
 </head>
 <body>
     <div id="header">
-        <div class="logo"><img src="logo.png" alt="logo"></div>
+        <div class="logo">
+            <img src="logo.png" alt="YouTunes Logo">
+        </div>
         <div class="search-container">
-            <input type="search" class="search" placeholder="Search for songs...">
+            <input type="search" class="search" placeholder="Search for songs, artists, or albums...">
+            <div class="search-icon">
+                <i class="fas fa-search"></i>
+            </div>
             <div id="search-results" class="search-results"></div>
         </div>
         <div class="nav">
-            <button class="menu-btn">
-                <i class="fa-solid fa-bars fa-2xl" style="color: #ffffff;"></i>
+            <button class="menu-btn" aria-label="Menu">
+                <i class="fa-solid fa-bars fa-2xl"></i>
             </button>
             <ul class="menu-items">
-                <li>Library</li>
-                <li>You might like...</li>
-                <li>Top tracks of the month</li>
-                <li>Top tracks of the week</li>
+                <li><i class="fas fa-music"></i> Library</li>
+                <li><i class="fas fa-star"></i> You might like...</li>
+                <li><i class="fas fa-chart-line"></i> Top tracks of the month</li>
+                <li><i class="fas fa-calendar"></i> Top tracks of the week</li>
+                <li><i class="fas fa-heart"></i> Favorites</li>
+                <li><i class="fas fa-history"></i> History</li>
             </ul>
         </div>
     </div>
 
     <div id="banner">
         <div class="Title">
-            <h1>Welcome to Youtunes</h1>
-            <p>YouTunes is a sleek and intuitive personal music player designed to provide a seamless listening experience. 
-                With an easy-to-navigate interface, YouTunes lets you effortlessly search and play your favorite tracks from YouTube.
-                Whether you're on the go or relaxing at home, YouTunes brings your music to life with crystal-clear sound.</p>
-            <button class="shuffle">Play a random song</button>
+            <h1>Welcome to YouTunes</h1>
+            <p>Experience music like never before with YouTunes - your personal music companion. 
+               Discover new tracks, create playlists, and enjoy high-quality streaming from YouTube's vast library. 
+               With our intuitive interface and powerful features, your perfect soundtrack is just a click away.</p>
+            <div class="banner-buttons">
+                <button class="shuffle"><i class="fas fa-random"></i> Shuffle Play</button>
+                <button class="trending"><i class="fas fa-fire"></i> Trending Now</button>
+            </div>
         </div>
-        <img src="person.png" alt="person">
+        <div class="banner-image">
+            <img src="person.png" alt="Person listening to music" class="bounce-animation">
+        </div>
     </div>
 
     <div id="recently-played">
-        <h1 class="heading">Recently Played</h1>
-        <div id="history-container">
-            <!-- Recently played songs will be populated here -->
+        <div class="section-header">
+            <h1 class="heading">Recently Played</h1>
+            <button class="view-all">View All</button>
         </div>
+        <div id="history-container"></div>
     </div>
 
     <div class="music-player">
-        <div class="now-playing">Now Playing: <span id="current-song">Search and play a song</span></div>
-        <div class="player-controls">
-            <button id="prev-btn"><i class="fas fa-step-backward"></i></button>
-            <button id="play-pause-btn"><i class="fas fa-play"></i></button>
-            <button id="next-btn"><i class="fas fa-step-forward"></i></button>
+        <div class="player-content">
+            <div class="now-playing">
+                <img id="song-thumbnail" src="default-thumbnail.png" alt="Song thumbnail">
+                <div class="song-info">
+                    <span id="current-song">Select a song to play</span>
+                    <span id="current-artist">Artist</span>
+                </div>
+            </div>
+            <div class="player-controls">
+                <button id="shuffle-btn" class="control-btn" aria-label="Shuffle">
+                    <i class="fas fa-random"></i>
+                </button>
+                <button id="prev-btn" class="control-btn" aria-label="Previous">
+                    <i class="fas fa-step-backward"></i>
+                </button>
+                <button id="play-pause-btn" class="control-btn play-btn" aria-label="Play">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button id="next-btn" class="control-btn" aria-label="Next">
+                    <i class="fas fa-step-forward"></i>
+                </button>
+                <button id="repeat-btn" class="control-btn" aria-label="Repeat">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            <div class="volume-control">
+                <i class="fas fa-volume-up"></i>
+                <input type="range" id="volume-slider" min="0" max="100" value="80">
+            </div>
+        </div>
+        <div class="progress-bar">
+            <span id="current-time">0:00</span>
+            <div class="progress-container">
+                <div id="progress"></div>
+            </div>
+            <span id="duration">0:00</span>
         </div>
         <div id="youtube-player"></div>
     </div>

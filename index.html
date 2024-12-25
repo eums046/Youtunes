@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Youtunes</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="logo.png" type="image/x-icon">
+</head>
+<body>
+    <div id="header">
+        <div class="logo"><img src="logo.png" alt="logo"></div>
+        <div class="search-container">
+            <input type="search" class="search" placeholder="Search for songs...">
+            <div id="search-results" class="search-results"></div>
+        </div>
+        <div class="nav">
+            <button class="menu-btn">
+                <i class="fa-solid fa-bars fa-2xl" style="color: #ffffff;"></i>
+            </button>
+            <ul class="menu-items">
+                <li>Library</li>
+                <li>You might like...</li>
+                <li>Top tracks of the month</li>
+                <li>Top tracks of the week</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="banner">
+        <div class="Title">
+            <h1>Welcome to Youtunes</h1>
+            <p>YouTunes is a sleek and intuitive personal music player designed to provide a seamless listening experience. 
+                With an easy-to-navigate interface, YouTunes lets you effortlessly search and play your favorite tracks from YouTube.
+                Whether you're on the go or relaxing at home, YouTunes brings your music to life with crystal-clear sound.</p>
+            <button class="shuffle">Play a random song</button>
+        </div>
+        <img src="person.png" alt="person">
+    </div>
+
+    <div id="recently-played">
+        <h1 class="heading">Recently Played</h1>
+        <div id="history-container">
+            <!-- Recently played songs will be populated here -->
+        </div>
+    </div>
+
+    <div class="music-player">
+        <div class="now-playing">Now Playing: <span id="current-song">Search and play a song</span></div>
+        <div class="player-controls">
+            <button id="prev-btn"><i class="fas fa-step-backward"></i></button>
+            <button id="play-pause-btn"><i class="fas fa-play"></i></button>
+            <button id="next-btn"><i class="fas fa-step-forward"></i></button>
+        </div>
+        <div id="youtube-player"></div>
+    </div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -57,6 +57,55 @@ class YouTunesPlayer {
         }
     }
 
+    // Player Event Handlers
+onPlayerReady() {
+    this.isPlayerReady = true;
+    this.setVolume(this.CONFIG.DEFAULT_VOLUME);
+}
+
+onPlayerStateChange(event) {
+    if (event.data === YT.PlayerState.ENDED) {
+        this.playNext();
+    }
+    this.updatePlayPauseButton();
+}
+
+onPlayerError(error) {
+    console.error('Player error:', error);
+    this.showError('Failed to play video');
+}
+
+// Playback Control Methods
+playSong(item) {
+    if (!item?.id?.videoId) return;
+    
+    this.currentVideoId = item.id.videoId;
+    this.player.loadVideoById(this.currentVideoId);
+    
+    this.currentSong.textContent = item.snippet.title;
+    this.currentArtist.textContent = item.snippet.channelTitle;
+    this.thumbnail.src = item.snippet.thumbnails.default.url;
+    
+    this.addToHistory(item);
+}
+
+togglePlayPause() {
+    if (!this.isPlayerReady) return;
+    
+    if (this.player.getPlayerState() === YT.PlayerState.PLAYING) {
+        this.player.pauseVideo();
+    } else {
+        this.player.playVideo();
+    }
+    this.updatePlayPauseButton();
+}
+
+updatePlayPauseButton() {
+    const isPlaying = this.player.getPlayerState() === YT.PlayerState.PLAYING;
+    const icon = this.playPauseBtn.querySelector('i');
+    icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+}
+
     // Event Listeners
     setupEventListeners() {
         // Menu toggle

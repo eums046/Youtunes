@@ -500,3 +500,27 @@ body {
     from { opacity: 1; }
     to { opacity: 0; }
 }
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-top: 0.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+    display: none;
+}
+
+.search-result-item {
+    padding: 1rem;
+    cursor: pointer;
+    transition: background-color var(--transition-speed);
+}
+
+.search-result-item:hover {
+    background-color: rgba(0,0,0,0.05);
+}

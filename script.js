@@ -21,18 +21,36 @@ class YouTunesPlayer {
         // Initialize everything when the class is instantiated
         this.initializeElements();
         this.setupEventListeners();
-        this.loadYouTubeAPI();  // New method to properly load the API
+        this.loadYouTubeAPI();
     }
 
     loadYouTubeAPI() {
-        // Create and load the YouTube IFrame API script
-        const tag = document.createElement('script');
-        tag.src = 'https://www.youtube.com/iframe_api';
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        return new Promise((resolve, reject) => {
+            // Check if API is already loaded
+            if (window.YT) {
+                this.initializeYouTubePlayer();
+                resolve();
+                return;
+            }
 
-        // Set up the callback
-        window.onYouTubeIframeAPIReady = () => this.initializeYouTubePlayer();
+            // Create and load the YouTube IFrame API script
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            tag.onerror = (error) => {
+                console.error('Failed to load YouTube IFrame API:', error);
+                reject(error);
+            };
+            
+            // Define the callback for when API is ready
+            window.onYouTubeIframeAPIReady = () => {
+                this.initializeYouTubePlayer();
+                resolve();
+            };
+
+            // Add the script to the page
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        });
     }
 
     initializeElements() {
@@ -78,12 +96,15 @@ class YouTunesPlayer {
                 this.menuItems?.classList.toggle('show');
             });
 
-            // Search functionality with proper debouncing
-            let searchTimeout;
-            this.searchInput?.addEventListener('input', () => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => this.handleSearch(), this.CONFIG.SEARCH_DELAY);
-            });
+            // Search functionality
+            if (this.searchInput) {
+                this.searchInput.addEventListener('input', (e) => {
+                    clearTimeout(this._searchTimeout);
+                    this._searchTimeout = setTimeout(() => {
+                        this.handleSearch(e.target.value);
+                    }, this.CONFIG.SEARCH_DELAY);
+                });
+            }
 
             // Progress bar click handling
             const progressContainer = document.querySelector('.progress-container');
@@ -96,7 +117,7 @@ class YouTunesPlayer {
                 }
             });
 
-            // Player controls with error handling
+            // Player controls
             this.playPauseBtn?.addEventListener('click', () => this.togglePlayPause());
             this.prevBtn?.addEventListener('click', () => this.playPrevious());
             this.nextBtn?.addEventListener('click', () => this.playNext());
@@ -115,95 +136,30 @@ class YouTunesPlayer {
             document.querySelector('.shuffle')?.addEventListener('click', () => this.toggleShuffle());
             document.querySelector('.trending')?.addEventListener('click', () => this.loadTrendingTracks());
 
-            // Keyboard controls
-            document.addEventListener('keydown', (e) => {
-                if (e.target.tagName === 'INPUT') return; // Ignore when typing in input fields
-                
-                switch (e.key.toLowerCase()) {
-                    case ' ':
-                        e.preventDefault();
-                        this.togglePlayPause();
-                        break;
-                    case 'arrowright':
-                        this.playNext();
-                        break;
-                    case 'arrowleft':
-                        this.playPrevious();
-                        break;
-                }
-            });
         } catch (error) {
             console.error('Error setting up event listeners:', error);
             this.showError('Failed to set up player controls');
         }
     }
 
-    initializeYouTubePlayer() {
-        try {
-            this.player = new YT.Player('youtube-player', {
-                height: '360',
-                width: '640',
-                playerVars: {
-                    controls: 0,
-                    disablekb: 1,
-                    fs: 0,
-                    rel: 0,
-                    modestbranding: 1,
-                    origin: window.location.origin
-                },
-                events: {
-                    onReady: () => this.onPlayerReady(),
-                    onStateChange: (event) => this.onPlayerStateChange(event),
-                    onError: (error) => this.handlePlayerError(error)
-                }
-            });
-        } catch (error) {
-            console.error('Error initializing YouTube player:', error);
-            this.showError('Failed to initialize YouTube player');
-        }
-    }
-
-    handlePlayerError(error) {
-        console.error('YouTube player error:', error);
-        const errorMessages = {
-            2: 'Invalid parameter in request',
-            5: 'Content cannot be played in HTML5 player',
-            100: 'Video not found or removed',
-            101: 'Video embedding not allowed',
-            150: 'Video embedding not allowed'
-        };
-        this.showError(errorMessages[error.data] || 'An error occurred while playing the video');
-        this.playNext(); // Try playing the next song
-    }
-
-    async searchYouTube(query) {
-        try {
-            const params = new URLSearchParams({
-                part: 'snippet',
-                type: 'video',
-                q: query,
-                key: this.CONFIG.API_KEY,
-                maxResults: 10,
-                videoCategoryId: '10' // Music category
-            });
-            
-            const url = `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                throw new Error(`YouTube API request failed: ${response.status}`);
+    async handleSearch(query) {
+        if (!query || query.length < 2) {
+            if (this.searchResults) {
+                this.searchResults.style.display = 'none';
             }
-            
-            return await response.json();
+            return;
+        }
+
+        try {
+            const response = await this.searchYouTube(query);
+            this.displaySearchResults(response.items || []);
         } catch (error) {
             console.error('Search error:', error);
-            this.showError('Failed to search YouTube. Please try again.');
-            return { items: [] };
+            this.showError('Search failed. Please try again.');
         }
     }
 
-    // Rest of the methods remain the same...
-    // (Keep all other methods as they were, they're working correctly)
+    // ... (rest of your methods remain the same)
 }
 
 // Initialize the player with error handling

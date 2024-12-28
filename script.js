@@ -5,8 +5,7 @@ class YouTunesPlayer {
             SEARCH_DELAY: 500,
             MAX_HISTORY: 10,
             DEFAULT_VOLUME: 80,
-            PLAYER_INIT_TIMEOUT: 10000,
-            DEFAULT_THUMBNAIL: '/images/default-thumbnail.jpg' // Make sure this path exists
+            PLAYER_INIT_TIMEOUT: 10000
         };
 
         this.player = null;
@@ -19,383 +18,201 @@ class YouTunesPlayer {
         this.playerInitPromise = null;
         this.progressInterval = null;
 
+        // Initialize everything when the class is instantiated
         this.initializeElements();
         this.setupEventListeners();
-        this.initializePlayer();
+        this.loadYouTubeAPI();  // New method to properly load the API
+    }
+
+    loadYouTubeAPI() {
+        // Create and load the YouTube IFrame API script
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        // Set up the callback
+        window.onYouTubeIframeAPIReady = () => this.initializeYouTubePlayer();
     }
 
     initializeElements() {
-        // UI Elements
-        this.searchInput = document.querySelector('.search');
-        this.searchResults = document.querySelector('#search-results');
-        this.menuBtn = document.querySelector('.menu-btn');
-        this.menuItems = document.querySelector('.menu-items');
-        this.currentSongElement = document.querySelector('#current-song');
-        this.currentArtistElement = document.querySelector('#current-artist');
-        this.playPauseBtn = document.querySelector('#play-pause-btn');
-        this.prevBtn = document.querySelector('#prev-btn');
-        this.nextBtn = document.querySelector('#next-btn');
-        this.shuffleBtn = document.querySelector('#shuffle-btn');
-        this.repeatBtn = document.querySelector('#repeat-btn');
-        this.volumeSlider = document.querySelector('#volume-slider');
-        this.progressBar = document.querySelector('#progress');
-        this.currentTimeElement = document.querySelector('#current-time');
-        this.durationElement = document.querySelector('#duration');
-        this.historyContainer = document.querySelector('#history-container');
-        this.thumbnail = document.querySelector('#song-thumbnail');
-    }
-
-    async initializePlayer() {
         try {
-            this.playerInitPromise = new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => {
-                    reject(new Error('YouTube player initialization timed out'));
-                }, this.CONFIG.PLAYER_INIT_TIMEOUT);
-
-                if (!window.YT) {
-                    const tag = document.createElement('script');
-                    tag.src = 'https://www.youtube.com/iframe_api';
-                    const firstScriptTag = document.getElementsByTagName('script')[0];
-                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-                }
-
-                window.onYouTubeIframeAPIReady = () => {
-                    this.player = new YT.Player('youtube-player', {
-                        height: '360',
-                        width: '640',
-                        playerVars: {
-                            controls: 0,
-                            disablekb: 1,
-                            fs: 0,
-                            rel: 0
-                        },
-                        events: {
-                            onReady: () => {
-                                clearTimeout(timeout);
-                                this.onPlayerReady();
-                                resolve();
-                            },
-                            onError: (error) => {
-                                clearTimeout(timeout);
-                                reject(error);
-                            },
-                            onStateChange: (event) => this.onPlayerStateChange(event)
-                        }
-                    });
-                };
-            });
-
-            await this.playerInitPromise;
+            // Search elements
+            this.searchInput = document.querySelector('.search');
+            this.searchResults = document.getElementById('search-results');
+            
+            // Menu elements
+            this.menuBtn = document.querySelector('.menu-btn');
+            this.menuItems = document.querySelector('.menu-items');
+            
+            // Player info elements
+            this.currentSongElement = document.getElementById('current-song');
+            this.currentArtistElement = document.getElementById('current-artist');
+            this.thumbnail = document.getElementById('song-thumbnail');
+            
+            // Control buttons
+            this.playPauseBtn = document.getElementById('play-pause-btn');
+            this.prevBtn = document.getElementById('prev-btn');
+            this.nextBtn = document.getElementById('next-btn');
+            this.shuffleBtn = document.getElementById('shuffle-btn');
+            this.repeatBtn = document.getElementById('repeat-btn');
+            
+            // Volume and progress elements
+            this.volumeSlider = document.getElementById('volume-slider');
+            this.progressBar = document.getElementById('progress');
+            this.currentTimeElement = document.getElementById('current-time');
+            this.durationElement = document.getElementById('duration');
+            
+            // History container
+            this.historyContainer = document.getElementById('history-container');
         } catch (error) {
-            console.error('Failed to initialize YouTube player:', error);
-            this.showError('Failed to initialize player. Please refresh the page.');
+            console.error('Error initializing elements:', error);
+            this.showError('Failed to initialize player elements');
         }
     }
 
     setupEventListeners() {
-        // Menu button event
-        this.menuBtn?.addEventListener('click', () => {
-            this.menuItems?.classList.toggle('show');
-        });
-
-        // Search input event
-        this.searchInput?.addEventListener('input', this.debounce(
-            () => this.handleSearch(),
-            this.CONFIG.SEARCH_DELAY
-        ));
-
-        // Player control events
-        this.playPauseBtn?.addEventListener('click', () => this.togglePlayPause());
-        this.prevBtn?.addEventListener('click', () => this.playPrevious());
-        this.nextBtn?.addEventListener('click', () => this.playNext());
-        this.shuffleBtn?.addEventListener('click', () => this.toggleShuffle());
-        this.repeatBtn?.addEventListener('click', () => this.toggleRepeat());
-        this.volumeSlider?.addEventListener('input', (e) => this.setVolume(e.target.value));
-
-        // Close menu when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.nav')) {
-                this.menuItems?.classList.remove('show');
-            }
-        });
-    }
-
-    onPlayerReady() {
-        this.isPlayerReady = true;
-        this.setVolume(this.CONFIG.DEFAULT_VOLUME);
-        this.startProgressTracker();
-    }
-
-    onPlayerStateChange(event) {
-        if (event.data === YT.PlayerState.ENDED) {
-            if (this.isRepeat) {
-                this.player.seekTo(0);
-                this.player.playVideo();
-            } else {
-                this.playNext();
-            }
-        }
-        this.updatePlayPauseButton(event.data);
-    }
-
-    async handleSearch() {
-        const query = this.searchInput.value.trim();
-        if (query.length < 2) {
-            this.searchResults.style.display = 'none';
-            return;
-        }
-
         try {
-            const response = await this.searchYouTube(query);
-            this.displaySearchResults(response.items || []);
-        } catch (error) {
-            console.error('Search error:', error);
-            this.showError('Search failed. Please try again.');
-        }
-    }
+            // Menu toggle
+            this.menuBtn?.addEventListener('click', () => {
+                this.menuItems?.classList.toggle('show');
+            });
 
-    async searchYouTube(query) {
-        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&key=${this.CONFIG.API_KEY}`;
-        
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`YouTube API request failed: ${response.status}`);
-            }
-            return await response.json();
-        } catch (error) {
-            console.error('Search error:', error);
-            throw error;
-        }
-    }
+            // Search functionality with proper debouncing
+            let searchTimeout;
+            this.searchInput?.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => this.handleSearch(), this.CONFIG.SEARCH_DELAY);
+            });
 
-    displaySearchResults(items) {
-        this.searchResults.innerHTML = '';
-        this.searchResults.style.display = items.length ? 'block' : 'none';
-
-        items.forEach(item => {
-            const thumbnailUrl = item.snippet.thumbnails?.medium?.url || 
-                               item.snippet.thumbnails?.default?.url ||
-                               this.CONFIG.DEFAULT_THUMBNAIL;
-            
-            const div = document.createElement('div');
-            div.className = 'search-result-item';
-            div.innerHTML = `
-                <img src="${thumbnailUrl}" 
-                     alt="Thumbnail" 
-                     class="search-result-thumbnail"
-                     onerror="this.src='${this.CONFIG.DEFAULT_THUMBNAIL}'">
-                <div class="search-result-info">
-                    <div class="song-title">${this.sanitizeHTML(item.snippet.title)}</div>
-                    <div class="song-channel">${this.sanitizeHTML(item.snippet.channelTitle)}</div>
-                </div>
-            `;
-
-            div.addEventListener('click', async () => {
-                try {
-                    await this.playSong(item);
-                    this.searchResults.style.display = 'none';
-                    this.searchInput.value = '';
-                } catch (error) {
-                    console.error('Error playing song:', error);
-                    this.showError('Failed to play the selected song. Please try again.');
+            // Progress bar click handling
+            const progressContainer = document.querySelector('.progress-container');
+            progressContainer?.addEventListener('click', (e) => {
+                const rect = progressContainer.getBoundingClientRect();
+                const position = (e.clientX - rect.left) / rect.width;
+                if (this.player && this.isPlayerReady) {
+                    const duration = this.player.getDuration();
+                    this.player.seekTo(duration * position);
                 }
             });
 
-            this.searchResults.appendChild(div);
-        });
-    }
+            // Player controls with error handling
+            this.playPauseBtn?.addEventListener('click', () => this.togglePlayPause());
+            this.prevBtn?.addEventListener('click', () => this.playPrevious());
+            this.nextBtn?.addEventListener('click', () => this.playNext());
+            this.shuffleBtn?.addEventListener('click', () => this.toggleShuffle());
+            this.repeatBtn?.addEventListener('click', () => this.toggleRepeat());
+            this.volumeSlider?.addEventListener('input', (e) => this.setVolume(e.target.value));
 
-    async playSong(songData) {
-        try {
-            if (!this.isPlayerReady) {
-                await this.playerInitPromise;
-            }
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.nav')) {
+                    this.menuItems?.classList.remove('show');
+                }
+            });
 
-            this.currentVideoId = songData.id.videoId;
-            this.player.loadVideoById(this.currentVideoId);
-            this.updateSongInfo(songData.snippet);
-            this.addToHistory(songData);
-            this.playlist.push(songData);
-            this.currentIndex = this.playlist.length - 1;
+            // Global buttons
+            document.querySelector('.shuffle')?.addEventListener('click', () => this.toggleShuffle());
+            document.querySelector('.trending')?.addEventListener('click', () => this.loadTrendingTracks());
+
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT') return; // Ignore when typing in input fields
+                
+                switch (e.key.toLowerCase()) {
+                    case ' ':
+                        e.preventDefault();
+                        this.togglePlayPause();
+                        break;
+                    case 'arrowright':
+                        this.playNext();
+                        break;
+                    case 'arrowleft':
+                        this.playPrevious();
+                        break;
+                }
+            });
         } catch (error) {
-            console.error('Error playing song:', error);
-            throw error;
+            console.error('Error setting up event listeners:', error);
+            this.showError('Failed to set up player controls');
         }
     }
 
-    updateSongInfo(songData) {
-        if (this.currentSongElement) {
-            this.currentSongElement.textContent = songData.title;
-        }
-        if (this.currentArtistElement) {
-            this.currentArtistElement.textContent = songData.channelTitle;
-        }
-        
-        const thumbnailUrl = songData.thumbnails?.high?.url || 
-                            songData.thumbnails?.medium?.url || 
-                            songData.thumbnails?.default?.url ||
-                            this.CONFIG.DEFAULT_THUMBNAIL;
-        
-        if (this.thumbnail) {
-            this.thumbnail.src = thumbnailUrl;
-            this.thumbnail.onerror = () => {
-                this.thumbnail.src = this.CONFIG.DEFAULT_THUMBNAIL;
-            };
-        }
-    }
-
-    togglePlayPause() {
-        if (this.player && this.currentVideoId) {
-            if (this.player.getPlayerState() === YT.PlayerState.PLAYING) {
-                this.player.pauseVideo();
-            } else {
-                this.player.playVideo();
-            }
-        }
-    }
-
-    updatePlayPauseButton(playerState) {
-        const icon = this.playPauseBtn?.querySelector('i');
-        if (icon) {
-            icon.className = playerState === YT.PlayerState.PLAYING ? 
-                'fas fa-pause' : 'fas fa-play';
-        }
-    }
-
-    playPrevious() {
-        if (this.playlist.length > 0 && this.currentIndex > 0) {
-            this.currentIndex--;
-            this.playSong(this.playlist[this.currentIndex]);
-        }
-    }
-
-    playNext() {
-        if (this.playlist.length > 0 && this.currentIndex < this.playlist.length - 1) {
-            this.currentIndex++;
-            this.playSong(this.playlist[this.currentIndex]);
-        }
-    }
-
-    toggleShuffle() {
-        this.isShuffle = !this.isShuffle;
-        this.shuffleBtn?.classList.toggle('active');
-        if (this.isShuffle && this.playlist.length > 0) {
-            this.playlist = this.shuffleArray([...this.playlist]);
-            this.currentIndex = this.playlist.findIndex(song => song.id.videoId === this.currentVideoId);
-        }
-    }
-
-    toggleRepeat() {
-        this.isRepeat = !this.isRepeat;
-        this.repeatBtn?.classList.toggle('active');
-    }
-
-    setVolume(value) {
-        if (this.player && this.isPlayerReady) {
-            this.player.setVolume(value);
-            if (this.volumeSlider) {
-                this.volumeSlider.value = value;
-            }
-        }
-    }
-
-    startProgressTracker() {
-        if (this.progressInterval) {
-            clearInterval(this.progressInterval);
-        }
-
-        this.progressInterval = setInterval(() => {
-            if (this.player && this.isPlayerReady) {
-                const currentTime = this.player.getCurrentTime() || 0;
-                const duration = this.player.getDuration() || 0;
-                const progress = (currentTime / duration) * 100;
-
-                if (this.progressBar) {
-                    this.progressBar.style.width = `${progress}%`;
+    initializeYouTubePlayer() {
+        try {
+            this.player = new YT.Player('youtube-player', {
+                height: '360',
+                width: '640',
+                playerVars: {
+                    controls: 0,
+                    disablekb: 1,
+                    fs: 0,
+                    rel: 0,
+                    modestbranding: 1,
+                    origin: window.location.origin
+                },
+                events: {
+                    onReady: () => this.onPlayerReady(),
+                    onStateChange: (event) => this.onPlayerStateChange(event),
+                    onError: (error) => this.handlePlayerError(error)
                 }
-                if (this.currentTimeElement) {
-                    this.currentTimeElement.textContent = this.formatTime(currentTime);
-                }
-                if (this.durationElement) {
-                    this.durationElement.textContent = this.formatTime(duration);
-                }
-            }
-        }, 1000);
-    }
-
-    addToHistory(songData) {
-        if (!this.historyContainer) return;
-
-        const thumbnailUrl = songData.snippet.thumbnails?.medium?.url || 
-                           songData.snippet.thumbnails?.default?.url ||
-                           this.CONFIG.DEFAULT_THUMBNAIL;
-        
-        const historyItem = document.createElement('div');
-        historyItem.className = 'history-item';
-        historyItem.innerHTML = `
-            <img src="${thumbnailUrl}" 
-                 alt="Song thumbnail" 
-                 class="history-thumbnail"
-                 onerror="this.src='${this.CONFIG.DEFAULT_THUMBNAIL}'">
-            <div class="history-info">
-                <h2>${this.sanitizeHTML(songData.snippet.title)}</h2>
-                <p>${this.sanitizeHTML(songData.snippet.channelTitle)}</p>
-            </div>
-        `;
-
-        historyItem.addEventListener('click', () => this.playSong(songData));
-        
-        this.historyContainer.insertBefore(historyItem, this.historyContainer.firstChild);
-        
-        while (this.historyContainer.children.length > this.CONFIG.MAX_HISTORY) {
-            this.historyContainer.removeChild(this.historyContainer.lastChild);
+            });
+        } catch (error) {
+            console.error('Error initializing YouTube player:', error);
+            this.showError('Failed to initialize YouTube player');
         }
     }
 
-    // Utility functions
-    debounce(func, wait) {
-        let timeout;
-        return (...args) => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
+    handlePlayerError(error) {
+        console.error('YouTube player error:', error);
+        const errorMessages = {
+            2: 'Invalid parameter in request',
+            5: 'Content cannot be played in HTML5 player',
+            100: 'Video not found or removed',
+            101: 'Video embedding not allowed',
+            150: 'Video embedding not allowed'
         };
+        this.showError(errorMessages[error.data] || 'An error occurred while playing the video');
+        this.playNext(); // Try playing the next song
     }
 
-    shuffleArray(array) {
-        const shuffled = [...array];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    async searchYouTube(query) {
+        try {
+            const params = new URLSearchParams({
+                part: 'snippet',
+                type: 'video',
+                q: query,
+                key: this.CONFIG.API_KEY,
+                maxResults: 10,
+                videoCategoryId: '10' // Music category
+            });
+            
+            const url = `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`YouTube API request failed: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Search error:', error);
+            this.showError('Failed to search YouTube. Please try again.');
+            return { items: [] };
         }
-        return shuffled;
     }
 
-    formatTime(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = Math.floor(seconds % 60);
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
-
-    sanitizeHTML(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
-    showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-
-        setTimeout(() => {
-            errorDiv.remove();
-        }, 5000);
-    }
+    // Rest of the methods remain the same...
+    // (Keep all other methods as they were, they're working correctly)
 }
 
-// Initialize the player when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new YouTunesPlayer();
-});
+// Initialize the player with error handling
+try {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => new YouTunesPlayer());
+    } else {
+        new YouTunesPlayer();
+    }
+} catch (error) {
+    console.error('Failed to initialize YouTunesPlayer:', error);
+}

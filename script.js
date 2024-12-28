@@ -164,7 +164,7 @@ class YouTunesPlayer {
         this.searchResults.style.display = items.length ? 'block' : 'none';
 
         items.forEach(item => {
-            const thumbUrl = item.snippet.thumbnails?.default?.url || 'default-thumbnail.png';
+            const thumbUrl = item.snippet.thumbnails?.default?.url || 'default-thumbnail.avif';
             const div = document.createElement('div');
             div.className = 'search-result-item';
             div.innerHTML = `
